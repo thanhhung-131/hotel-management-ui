@@ -3,25 +3,31 @@ import { useNavigate } from "react-router-dom";
 import RoomCard from "./RoomCard";
 
 function ProductList() {
-  const [rooms, setRooms] = useState([]);
+  const [rooms, setRooms] = useState([]); // Danh sách phòng
+  const [page, setPage] = useState(0); // Trang hiện tại
+  const [totalPages, setTotalPages] = useState(1); // Tổng số trang
+  const size = 5; // Số phòng trên mỗi trang (cùng với BE)
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const token = localStorage.getItem("authToken"); // Lấy token từ localStorage
-        console.log(token);
-        const response = await fetch("http://localhost:8080/v1/room", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`, // Gửi token trong header
-          },
-        });
+        const token = localStorage.getItem("authToken");
+
+        const response = await fetch(
+          `http://localhost:8080/v1/room/pagination?page=${page}&size=${size}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         if (response.status === 401) {
-          localStorage.removeItem("authToken"); // Xóa token nếu không hợp lệ
-          navigate("/login"); // Chuyển hướng đến trang đăng nhập
+          localStorage.removeItem("authToken");
+          navigate("/login");
           return;
         }
 
@@ -30,18 +36,15 @@ function ProductList() {
         }
 
         const data = await response.json();
-        setRooms(data);
+        setRooms(data.content); // Cập nhật danh sách phòng
+        setTotalPages(data.totalPages); // Cập nhật tổng số trang
       } catch (error) {
         console.error("Error fetching rooms:", error);
       }
     };
 
     fetchRooms();
-  }, [navigate]);
-
-  const handleShowMore = () => {
-    navigate("/rooms");
-  };
+  }, [page, navigate]); // Chạy lại khi `page` thay đổi
 
   return (
     <div className="w-full py-8">
@@ -51,6 +54,7 @@ function ProductList() {
           We provide the best rooms for our customers
         </p>
       </div>
+
       <div className="max-w-6xl mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {rooms.map((room) => (
@@ -58,11 +62,25 @@ function ProductList() {
           ))}
         </div>
       </div>
+
+      {/* Pagination Controls */}
       <div className="text-center mt-6">
         <button
-          onClick={handleShowMore}
-          className="bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors">
-          Show More
+          disabled={page === 0}
+          onClick={() => setPage(page - 1)}
+          className="bg-gray-500 text-white px-4 py-2 mx-2 rounded-lg disabled:opacity-50">
+          Previous
+        </button>
+
+        <span className="mx-4">
+          Page {page + 1} of {totalPages}
+        </span>
+
+        <button
+          disabled={page + 1 >= totalPages}
+          onClick={() => setPage(page + 1)}
+          className="bg-yellow-600 text-white px-4 py-2 mx-2 rounded-lg hover:bg-yellow-700 transition-colors disabled:opacity-50">
+          Next
         </button>
       </div>
     </div>

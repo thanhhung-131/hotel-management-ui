@@ -56,6 +56,7 @@ function RoomDetail() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
+          userId: localStorage.getItem("idUser"),
           roomId: room.id,
           guestSize: quantity,
           price: room.price * quantity,
