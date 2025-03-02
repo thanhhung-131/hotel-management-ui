@@ -16,6 +16,7 @@ import RoomDetail from './pages/RoomDetail'
 import CartPage from './pages/Cart'
 import Footer from './components/common/Footer'
 import List from './pages/List'
+import DashboardPage from './pages/Dashboard'
 
 // ProtectedRoute để kiểm tra xem người dùng đã đăng nhập chưa
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +36,7 @@ const AppContent = () => {
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/about' element={<About />} />
+        <Route path='/dashboard' element={<DashboardPage />} />
         <Route path='/rooms' element={<List />} />
         <Route
           path='/room/:roomId' // Route cho trang chi tiết phòng

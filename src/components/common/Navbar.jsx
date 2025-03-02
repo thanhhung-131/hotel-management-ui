@@ -62,6 +62,12 @@ function Navbar () {
           >
             Contact
           </Link>
+          <Link
+            to='/dashboard'
+            className='text-black text-base font-medium hover:text-gray-600'
+          >
+            Dashboard
+          </Link>
         </div>
 
         {/* Icons/Avatar */}
