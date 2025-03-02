@@ -1,111 +1,136 @@
-import React, { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import {
-  ShareIcon,
-  ArrowPathIcon,
-  HeartIcon
-} from '@heroicons/react/24/outline'
-import Navbar from '../components/common/Navbar'
-import rooms from '../data/mockData'
+import { useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/common/Navbar";
 
-function RoomDetail () {
-  const { roomId } = useParams()
-  const room = rooms.find(r => r.id.toString() === roomId.toString())
-  const [quantity, setQuantity] = useState(1)
+function RoomDetail() {
+  const navigate = useNavigate();
+  const { roomId } = useParams();
+  const [room, setRoom] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isOrdering, setIsOrdering] = useState(false); // Trạng thái đặt hàng
 
-  if (!room)
-    return (
-      <div>
-        <Navbar />
-        <div className='text-center py-16'>
-          <h2 className='text-4xl font-bold'>Room Not Found</h2>
-          <p className='text-gray-500 mt-4'>
-            The room you are looking for does not exist
-          </p>
-          <button
-            onClick={() => window.history.back()}
-            className='bg-yellow-600 text-white px-6 py-2 rounded-lg hover:bg-yellow-700 transition-colors mt-8'
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    )
+  useEffect(() => {
+    const fetchRoomDetail = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        const response = await fetch(
+          `http://localhost:8080/v1/room/${roomId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-  const increaseQuantity = () => {
-    setQuantity(prevQuantity => prevQuantity + 1)
-  }
+        if (!response.ok) {
+          throw new Error("Failed to fetch room details");
+        }
 
-  const decreaseQuantity = () => {
-    setQuantity(prevQuantity => (prevQuantity > 1 ? prevQuantity - 1 : 1))
-  }
+        const data = await response.json();
+        setRoom(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoomDetail();
+  }, [roomId]);
+
+  const handleOrder = async () => {
+    if (!room) return;
+    setIsOrdering(true); // Hiển thị trạng thái đang đặt hàng
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch("http://localhost:8080/v1/bookings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          userId: localStorage.getItem("idUser"),
+          roomId: room.id,
+          guestSize: quantity,
+          price: room.price * quantity,
+          phone: "0123456789", // Có thể lấy từ thông tin user
+          email: "user@example.com", // Có thể lấy từ thông tin user
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Đặt phòng thất bại!");
+      }
+
+      alert("Đặt phòng thành công!");
+      navigate("/"); // Chuyển về trang home
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      setIsOrdering(false); // Tắt trạng thái đang đặt hàng
+    }
+  };
+
+  if (loading) return <h2>Loading...</h2>;
+  if (error || !room) return <h2>Room Not Found</h2>;
 
   return (
     <>
-      <div>
-        <Navbar />
-      </div>
-      <div className='container mx-auto px-4 py-8 grid md:grid-cols-2 gap-8'>
+      <Navbar />
+      <div className="container mx-auto px-4 py-8 grid md:grid-cols-2 gap-8">
         {/* Hình ảnh phòng */}
-        <div className='relative w-full h-[400px] bg-gray-100 rounded-lg overflow-hidden'>
+        <div className="relative w-full h-[400px] bg-gray-100 rounded-lg overflow-hidden">
           <img
-            src={room.imageUrl}
-            alt={room.name}
-            className='w-full h-full object-cover'
-            onError={e =>
-              (e.target.src =
-                'https://via.placeholder.com/500?text=Image+Not+Found')
+            src={
+              room.imageUrl ||
+              "https://via.placeholder.com/500?text=Image+Not+Found"
             }
+            alt={room.roomName}
+            className="w-full h-full object-cover"
           />
         </div>
 
         {/* Thông tin phòng */}
         <div>
-          <h1 className='text-3xl font-bold mb-2'>{room.name}</h1>
-          <p className='text-gray-600 text-lg mb-4'>{room.description}</p>
-          <p className='text-2xl font-bold text-gray-900'>
-            Rp {room.price.toLocaleString()}
-          </p>
+          <h1 className="text-3xl font-bold mb-2">{room.roomName}</h1>
+          <p className="text-gray-600 text-lg mb-4">{room.description}</p>
+          <p className="text-2xl font-bold text-gray-900">${room.price}</p>
 
-          {/* Nút chức năng */}
-          <div className='flex items-center gap-4 my-6'>
+          {/* Số lượng */}
+          <div className="flex items-center gap-4 my-6">
             <button
-              className='border px-3 py-1 rounded'
-              onClick={decreaseQuantity}
-            >
+              className="border px-3 py-1 rounded"
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}>
               -
             </button>
-            <span className='text-lg'>{quantity}</span>
+            <span className="text-lg">{quantity}</span>
             <button
-              className='border px-3 py-1 rounded'
-              onClick={increaseQuantity}
-            >
+              className="border px-3 py-1 rounded"
+              onClick={() => setQuantity((q) => q + 1)}>
               +
             </button>
           </div>
 
-          {/* Hành động: Thêm vào giỏ hàng, So sánh, Yêu thích, Chia sẻ */}
-          <div className='flex gap-4'>
-            <button className='flex-1 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700'>
-              Add To Cart
-            </button>
-          </div>
-
-          <div className='flex space-x-3 mt-4'>
-            <button className='p-2 border rounded-full hover:bg-gray-100'>
-              <ShareIcon className='h-5 w-5 text-gray-600' />
-            </button>
-            <button className='p-2 border rounded-full hover:bg-gray-100'>
-              <ArrowPathIcon className='h-5 w-5 text-gray-600' />
-            </button>
-            <button className='p-2 border rounded-full hover:bg-gray-100'>
-              <HeartIcon className='h-5 w-5 text-gray-600' />
-            </button>
-          </div>
+          {/* Nút đặt hàng */}
+          <button
+            onClick={handleOrder}
+            className={`flex-1 bg-yellow-600 text-white py-2 rounded-lg hover:bg-yellow-700 transition ${
+              isOrdering ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={isOrdering}>
+            {isOrdering ? "Đang đặt hàng..." : "Đặt Hàng"}
+          </button>
         </div>
       </div>
     </>
-  )
+  );
 }
 
-export default RoomDetail
+export default RoomDetail;

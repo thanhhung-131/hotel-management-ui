@@ -56,12 +56,12 @@ function Navbar () {
           >
             About
           </Link>
-          <Link
+          {/* <Link
             to='/contact'
             className='text-black text-base font-medium hover:text-gray-600'
           >
             Contact
-          </Link>
+          </Link> */}
           <Link
             to='/dashboard'
             className='text-black text-base font-medium hover:text-gray-600'
